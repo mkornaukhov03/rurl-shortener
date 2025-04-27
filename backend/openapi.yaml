@@ -1,0 +1,74 @@
+openapi: 3.0.0
+
+info:
+  title: OpenAPI specification of rurl shortener
+  version: 0.1.0
+servers:
+  - url: http://localhost:4444
+    description: Backend
+
+paths:
+  /status:
+    get:
+      summary: Status of the server
+      operationId: getStatus
+      tags:
+        - RURL Shortener
+      responses:
+        '200':
+          description: "Server is healthy"
+  /{short}:
+    get:
+      summary: Redirect to original link
+      operationId: getUrl
+      tags:
+        - RURL Shortener
+      responses:
+        '301':
+          description: Moved Permanently
+          headers:
+            Location:
+              schema:
+                type: string
+              example: "https://en.wikipedia.org/wiki/Wikipedia"
+              description: "Original full link"
+      parameters:
+        - name: "short"
+          in: path
+          description: "Get the link that's shorten by this"
+          required: true
+          schema:
+            type: string
+            format: path
+  /:
+    post:
+      summary: Create short link
+      requestBody:
+          required: true
+          content:
+            application/json;charset=UTF-8:
+              schema:
+                $ref: "#/components/schemas/ShortenRequest"
+      responses:
+        '200':
+          description: "Successfully shorten"
+        '409':
+          description: "Conflict. The short link is already taken"
+        '400':
+          description: "Bad request"
+
+components:
+  schemas:
+    ShortenRequest:
+      type: object
+      required:
+        - old
+        - short
+      properties:
+        old:
+          description: Link to be shortened
+          type: string
+          example: https://en.wikipedia.org/wiki/Wikipedia
+        short:
+          type: string
+          example: wiki
