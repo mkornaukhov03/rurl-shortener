@@ -1,0 +1,22 @@
+name: rurl
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "4444:4444"
+    environment:
+      - RURL_PORT=4444
+      - RURL_HOST=0.0.0.0
+
+  frontend:
+    image: nginx:alpine
+    ports:
+      - "5555:80"
+    volumes:
+      - ./app:/usr/share/nginx/html
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - backend

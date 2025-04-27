@@ -1,0 +1,10 @@
+[package]
+name = "rurl-shortener"
+version = "0.0.1"
+edition = "2024"
+
+[dependencies]
+axum = "0.8.3"
+axum-macros = "0.5.0"
+serde = "1.0.219"
+tokio = { version = "1.44.2", features = ["full"] }
