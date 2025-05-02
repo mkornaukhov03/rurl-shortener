@@ -1,0 +1,7 @@
+scrape_configs:
+- job_name: shortener
+  static_configs:
+  - targets:
+    - backend:8888
+    - victoria-test:8888
+    

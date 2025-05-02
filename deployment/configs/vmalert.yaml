@@ -1,0 +1,9 @@
+groups:
+  - name: UrlShortenerAlerts
+    rules:
+      - alert: TestAlert
+        for: 1ms
+        expr: myapp_processed_ops_total{} > 0
+        labels:
+          label: testLabel
+          host: "{{ $labels.instance }}"
