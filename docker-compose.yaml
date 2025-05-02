@@ -1,6 +1,16 @@
 name: rurl
 
 services:
+  redis:
+    image: redis:7.2-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf
+    restart: unless-stopped
+    command: redis-server /usr/local/etc/redis/redis.conf
+
   backend:
     build:
       context: ./backend
@@ -10,6 +20,9 @@ services:
     environment:
       - RURL_PORT=4444
       - RURL_HOST=0.0.0.0
+      - RUST_LOG=info
+    depends_on:
+      - redis
 
   frontend:
     image: nginx:alpine
@@ -21,7 +34,6 @@ services:
     depends_on:
       - backend
 
-  # container that export some metrics and logs
   victoria-test:
     build:
       context: ./victoria-test
@@ -99,3 +111,6 @@ services:
       ]
     ports:
       - 8880:8880
+
+volumes:
+  redis_data:
