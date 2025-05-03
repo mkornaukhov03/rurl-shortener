@@ -52,8 +52,12 @@ paths:
       responses:
         '200':
           description: "Successfully shorten"
+          content:
+            application/json;charset=UTF-8:
+              schema:
+                $ref: "#/components/schemas/ShortenResponse"
         '409':
-          description: "Conflict. The short link is already taken"
+          description: "Conflict. The short link is already occupied"
         '400':
           description: "Bad request"
 
@@ -62,13 +66,18 @@ components:
     ShortenRequest:
       type: object
       required:
-        - old
-        - short
+        - url
       properties:
-        old:
+        url:
           description: Link to be shortened
           type: string
           example: https://en.wikipedia.org/wiki/Wikipedia
-        short:
+    ShortenResponse:
+      type: object
+      required:
+      - url
+      properties:
+        url:
+          description: Link to be shortened
           type: string
-          example: wiki
+          example: https://en.wikipedia.org/wiki/Wikipedia
