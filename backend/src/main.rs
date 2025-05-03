@@ -275,3 +275,29 @@ async fn handle_get(State(state): State<Arc<AppState>>, Path(path): Path<String>
         None => return (StatusCode::NOT_FOUND, "Not found").into_response(),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use std::collections::HashSet;
+
+    #[tokio::test]
+    async fn test_storage() {
+        let storage = Storage::NonPersistent(Default::default());
+        assert!(storage.store("key".into(), "val".into()).await);
+        assert!(!storage.store("key".into(), "val2".into()).await);
+        assert!(storage.fetch("key").await == Some("val".into()));
+    }
+
+    #[tokio::test]
+    async fn test_random_link_generator() {
+        let link_generator = LinkGenerator::Random;
+        let keys = vec!["key1", "key2", "key3"];
+        let mut short_links = HashSet::<String>::new();
+        for key in keys.iter() {
+            short_links.insert(link_generator.generate(&key).await);
+        }
+        assert!(short_links.len() == keys.len());
+    }
+}
