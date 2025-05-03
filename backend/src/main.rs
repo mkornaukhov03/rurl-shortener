@@ -224,26 +224,37 @@ async fn handle_post(
     Json(mut params): Json<HashMap<String, String>>,
 ) -> Response {
     log::info!("POST / ({:?})", params);
+
+    // TODO validate uri
     match params.remove("url") {
         Some(url) => {
-            // TODO check for conflict and try N times
-            // TODO validation of url
-            let short = state.link_generator.generate(&url).await;
-            if state.storage.store(short.clone(), url).await {
-                (
-                    http::StatusCode::OK,
-                    Json(hashmap! {
-                        "short" => short
-                    }),
-                )
-                    .into_response()
-            } else {
-                (
-                    http::StatusCode::CONFLICT,
-                    "Generated link is already occupied",
-                )
-                    .into_response()
+            const MAX_ATTEMPTS: usize = 3;
+
+            for attempt in 1..=MAX_ATTEMPTS {
+                let short = state.link_generator.generate(&url).await;
+
+                if state.storage.store(short.clone(), url.clone()).await {
+                    return (
+                        http::StatusCode::OK,
+                        Json(hashmap! {
+                            "short" => short
+                        }),
+                    )
+                        .into_response();
+                }
+
+                log::warn!(
+                    "Attempt {}/{} failed to generate unique short link",
+                    attempt,
+                    MAX_ATTEMPTS
+                );
             }
+
+            (
+                http::StatusCode::SERVICE_UNAVAILABLE,
+                "Cannot generate unique short link after multiple attempts",
+            )
+                .into_response()
         }
         _ => http::StatusCode::BAD_REQUEST.into_response(),
     }
