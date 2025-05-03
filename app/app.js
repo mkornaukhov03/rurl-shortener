@@ -1,33 +1,35 @@
-document.addEventListener('DOMContentLoaded', function () {
-    const app = document.getElementById('app');
-    const backendProxy = '/api';
-
-    app.innerHTML = `
-        <h1>Backend Status Checker</h1>
-        <button id="statusBtn">Check Backend Status</button>
-        <div id="statusResult" style="margin-top: 20px;"></div>
-    `;
-
-    const statusBtn = document.getElementById('statusBtn');
-    const statusResult = document.getElementById('statusResult');
-
-    statusBtn.addEventListener('click', async function () {
-        try {
-            statusResult.textContent = "Checking...";
-            statusBtn.disabled = true;
-
-            const response = await fetch(`${backendProxy}/status`);
-            statusResult.innerHTML = `
-                <p>Status: <strong>${response.status}</strong></p>
-                <p>Status Text: <strong>${response.statusText}</strong></p>
-            `;
-
-        } catch (error) {
-            statusResult.innerHTML = `
-                <p style="color: red;">Error: ${error.message}</p>
-            `;
-        } finally {
-            statusBtn.disabled = false;
+document.addEventListener('DOMContentLoaded', function() {
+    const shortenButton = document.getElementById('shortenButton');
+    shortenButton.addEventListener('click', shortenLink);
+    function shortenLink() {
+        const inputLink = document.getElementById('inputLink').value;
+        const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        let shortLink = '';
+        for (let i = 0; i < 8; i++) {
+            const randomIndex = Math.floor(Math.random() * charset.length);
+            shortLink += charset[randomIndex];
         }
-    });
+        const data = {
+            old: inputLink,
+            short: shortLink
+        };
+        let randomUrl = `${window.appConfig.NGINX_URL}/${shortLink}`;
+
+        fetch('/api/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Server response:', data);
+            document.getElementById('shortenedLink').textContent = randomUrl;
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('shortenedLink').textContent = randomUrl;
+        });
+    }
 });
