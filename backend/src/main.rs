@@ -8,6 +8,8 @@ use axum::{
     routing::{get, post},
 };
 use axum_macros::debug_handler;
+use maplit::hashmap;
+use rand::Rng;
 use tokio::sync::{Mutex, RwLock};
 
 // TODO use pool of connections instead of one
@@ -99,7 +101,6 @@ impl RedisSingleConnection {
     }
 }
 
-// TODO validation of url
 #[allow(unused)]
 enum Storage {
     NonPersistent(RwLock<HashMap<String, String>>),
@@ -132,8 +133,32 @@ impl Storage {
     }
 }
 
+enum LinkGenerator {
+    Random,
+}
+
+impl LinkGenerator {
+    async fn generate(&self, _full_link: &str) -> String {
+        match self {
+            LinkGenerator::Random => {
+                const CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ\
+                         abcdefghijklmnopqrstuvwxyz\
+                         0123456789";
+                let mut rng = rand::rng();
+                return (0..8)
+                    .map(|_| {
+                        let idx = rng.random_range(0..CHARSET.len());
+                        CHARSET[idx] as char
+                    })
+                    .collect();
+            }
+        }
+    }
+}
+
 struct AppState {
     storage: Storage,
+    link_generator: LinkGenerator,
     config: Config,
 }
 
@@ -164,7 +189,6 @@ fn config_from_env() -> Config {
 
 #[tokio::main]
 async fn main() {
-    // Env logger is for development purposes
     env_logger::init();
 
     let config = config_from_env();
@@ -172,7 +196,8 @@ async fn main() {
     let storage = Storage::Redis(RedisSingleConnection::new(config.redis_endpoint).await);
     let state = Arc::new(AppState {
         config: config_from_env(),
-        storage: storage,
+        link_generator: LinkGenerator::Random,
+        storage,
     });
 
     let app = Router::new()
@@ -197,20 +222,41 @@ async fn handle_status(State(_state): State<Arc<AppState>>) -> StatusCode {
 async fn handle_post(
     State(state): State<Arc<AppState>>,
     Json(mut params): Json<HashMap<String, String>>,
-) -> StatusCode {
+) -> Response {
     log::info!("POST / ({:?})", params);
-    match (params.remove("old"), params.remove("short")) {
-        (Some(old), Some(short)) => {
-            if short == "status" {
-                return http::StatusCode::CONFLICT;
+
+    // TODO validate uri
+    match params.remove("url") {
+        Some(url) => {
+            const MAX_ATTEMPTS: usize = 3;
+
+            for attempt in 1..=MAX_ATTEMPTS {
+                let short = state.link_generator.generate(&url).await;
+
+                if state.storage.store(short.clone(), url.clone()).await {
+                    return (
+                        http::StatusCode::OK,
+                        Json(hashmap! {
+                            "short" => short
+                        }),
+                    )
+                        .into_response();
+                }
+
+                log::warn!(
+                    "Attempt {}/{} failed to generate unique short link",
+                    attempt,
+                    MAX_ATTEMPTS
+                );
             }
-            if state.storage.store(short, old).await {
-                http::StatusCode::OK
-            } else {
-                http::StatusCode::CONFLICT
-            }
+
+            (
+                http::StatusCode::SERVICE_UNAVAILABLE,
+                "Cannot generate unique short link after multiple attempts",
+            )
+                .into_response()
         }
-        _ => http::StatusCode::BAD_REQUEST,
+        _ => http::StatusCode::BAD_REQUEST.into_response(),
     }
 }
 
