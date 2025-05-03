@@ -16,6 +16,10 @@ server {
         try_files $uri $uri/ /index.html;
     }
 
+    location /tests/ {
+        try_files $uri $uri/ /test/index.html;
+    }
+
     # Proxy API requests to backend
     location /api/ {
         proxy_pass http://backend:4444/;

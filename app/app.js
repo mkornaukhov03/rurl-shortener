@@ -1,8 +1,15 @@
+import { validateURL } from './utils.js';
+
 document.addEventListener('DOMContentLoaded', function() {
     const shortenButton = document.getElementById('shortenButton');
     shortenButton.addEventListener('click', shortenLink);
     function shortenLink() {
         const inputLink = document.getElementById('inputLink').value;
+        if (!validateURL(inputLink)) {
+            console.error('Error: input link has wrong format');
+            document.getElementById('shortenedLink').textContent = "Input link has wrong format";
+            return;
+        }
         const data = {
             url: inputLink,
         };
@@ -17,7 +24,8 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             console.log('Server response:', data);
-            document.getElementById('shortenedLink').textContent = `${window.appConfig.NGINX_URL}/${data.short}`;
+            const shortenedLink = `${window.appConfig.NGINX_URL}/${data.short}`;
+            document.getElementById('shortenedLink').textContent = shortenedLink;
         })
         .catch(error => {
             console.error('Error:', error);
