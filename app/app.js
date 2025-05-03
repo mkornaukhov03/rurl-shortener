@@ -4,15 +4,16 @@ document.addEventListener('DOMContentLoaded', function() {
     function shortenLink() {
         const inputLink = document.getElementById('inputLink').value;
         const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-        let randomUrl = 'click.ru/';
+        let shortLink = '';
         for (let i = 0; i < 8; i++) {
             const randomIndex = Math.floor(Math.random() * charset.length);
-            randomUrl += charset[randomIndex];
+            shortLink += charset[randomIndex];
         }
         const data = {
             old: inputLink,
-            short: randomUrl
+            short: shortLink
         };
+        let randomUrl = `${window.appConfig.NGINX_URL}/${shortLink}`;
 
         fetch('/api/', {
             method: 'POST',
@@ -23,11 +24,11 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(response => response.json())
         .then(data => {
-            console.log('Ответ от сервера:', data);
+            console.log('Server response:', data);
             document.getElementById('shortenedLink').textContent = randomUrl;
         })
         .catch(error => {
-            console.error('Ошибка:', error);
+            console.error('Error:', error);
             document.getElementById('shortenedLink').textContent = randomUrl;
         });
     }
