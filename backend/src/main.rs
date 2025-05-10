@@ -248,9 +248,8 @@ struct Config {
     port: u16,
     host: String,
 
-    // TODO optional?
     redis_endpoint: String,
-    openrouter_token: String,
+    openrouter_token: Option<String>,
 }
 
 fn config_from_env() -> Config {
@@ -264,8 +263,7 @@ fn config_from_env() -> Config {
     // TODO fallback into in memory or fail?
     let redis_endpoint = env::var("RURL_REDIS_ENDPOINT").unwrap_or("redis:6379".into());
     log::info!("redis_endpoint = {}", redis_endpoint);
-    let openrouter_token = env::var("RURL_OPENROUTER_TOKEN")
-        .expect("Provide openrouter token via RURL_OPENROUTER_TOKEN");
+    let openrouter_token = env::var("RURL_OPENROUTER_TOKEN").ok();
 
     Config {
         port,
@@ -275,16 +273,26 @@ fn config_from_env() -> Config {
     }
 }
 
+fn get_link_generator(config: &Config) -> LinkGenerator{
+    match &config.openrouter_token {
+        Some(token) => LinkGenerator::OpenrouterLlama(token.clone()),
+        None => {
+            LinkGenerator::Random
+        }
+    }
+}
+
 #[tokio::main]
 async fn main() {
     env_logger::init();
 
     let config = config_from_env();
 
-    let storage = Storage::Redis(RedisSingleConnection::new(config.redis_endpoint).await);
+    let link_generator = get_link_generator(&config);
+    let storage = Storage::Redis(RedisSingleConnection::new(config.redis_endpoint.clone()).await);
     let state = Arc::new(AppState {
-        config: config_from_env(),
-        link_generator: LinkGenerator::OpenrouterLlama(config.openrouter_token),
+        config: config,
+        link_generator: link_generator,
         storage,
     });
 
