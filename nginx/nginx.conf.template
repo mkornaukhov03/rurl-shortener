@@ -50,7 +50,7 @@ server {
     }
 
     # Proxy short URL redirects to backend - fixed regex pattern
-    location ~ "^/[A-Za-z0-9]{8}$" {
+    location ~* "^/(?!tests$|index\.html$)[A-Za-z0-9_]+$" {
         proxy_pass http://backend:4444;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
