@@ -18,9 +18,11 @@ services:
     ports:
       - "4444:4444"
     environment:
+      - RUST_LOG=info
       - RURL_PORT=4444
       - RURL_HOST=0.0.0.0
-      - RUST_LOG=info
+      - RURL_REDIS_ENDPOINT=redis:6379
+      - RURL_OPENROUTER_TOKEN=${RURL_OPENROUTER_TOKEN}
     depends_on:
       - redis
 

@@ -10,6 +10,7 @@ use axum::{
 use axum_macros::debug_handler;
 use maplit::hashmap;
 use rand::Rng;
+use serde::{Deserialize, Serialize};
 use tokio::sync::{Mutex, RwLock};
 
 // TODO use pool of connections instead of one
@@ -133,24 +134,104 @@ impl Storage {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+struct Message {
+    role: String,
+    content: String,
+}
+
+#[derive(Debug, Serialize)]
+struct OpenrouterRequestBody {
+    model: String,
+    messages: Vec<Message>,
+}
+
+#[derive(Debug, Deserialize)]
+struct ModelResponse {
+    short_link: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct Choice {
+    message: Message,
+}
+
+#[derive(Debug, Deserialize)]
+struct OpenrouterResponse {
+    id: String,
+    choices: Vec<Choice>,
+}
+
 enum LinkGenerator {
     Random,
+    OpenrouterLlama(String),
 }
 
 impl LinkGenerator {
-    async fn generate(&self, _full_link: &str) -> String {
+    async fn generate(&self, full_link: &str) -> Option<String> {
         match self {
             LinkGenerator::Random => {
                 const CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ\
                          abcdefghijklmnopqrstuvwxyz\
                          0123456789";
                 let mut rng = rand::rng();
-                return (0..8)
-                    .map(|_| {
-                        let idx = rng.random_range(0..CHARSET.len());
-                        CHARSET[idx] as char
-                    })
-                    .collect();
+                return Some(
+                    (0..8)
+                        .map(|_| {
+                            let idx = rng.random_range(0..CHARSET.len());
+                            CHARSET[idx] as char
+                        })
+                        .collect(),
+                );
+            }
+            LinkGenerator::OpenrouterLlama(token) => {
+                let prompt = format!(
+                    r#"
+Can you suggest a short path for a URL shortener for this URL: '{}'? 
+Give only one suggestion. It should be one word, possibly with underscores.
+Output have to be in json format, don't write anything except the json.
+Example output:
+{}
+"#,
+                    full_link, "{\"short_link\": \"url\"}"
+                );
+                let body = OpenrouterRequestBody {
+                    model: "meta-llama/llama-4-maverick:free".to_string(),
+                    messages: vec![Message {
+                        role: "assistant".to_string(),
+                        content: prompt,
+                    }],
+                };
+                let client = reqwest::Client::new();
+                let response;
+
+                match client
+                    .post("https://openrouter.ai/api/v1/chat/completions")
+                    .header(header::AUTHORIZATION, format!("Bearer {}", token))
+                    .json(&body)
+                    .send()
+                    .await
+                {
+                    Ok(resp) => response = resp,
+                    Err(e) => {
+                        log::error!("Error in openrouter api: {e}");
+                        return None;
+                    }
+                }
+
+                let openrouter_resp: OpenrouterResponse;
+
+                match response.json::<OpenrouterResponse>().await {
+                    Ok(r) => openrouter_resp = r,
+                    Err(e) => {
+                        log::error!("Error in demarshalling api: {e}");
+                        return None;
+                    }
+                }
+                let model_response: ModelResponse =
+                    serde_json::from_str(&openrouter_resp.choices[0].message.content).ok()?;
+
+                Some(model_response.short_link)
             }
         }
     }
@@ -166,7 +247,9 @@ struct AppState {
 struct Config {
     port: u16,
     host: String,
+
     redis_endpoint: String,
+    openrouter_token: Option<String>,
 }
 
 fn config_from_env() -> Config {
@@ -179,11 +262,23 @@ fn config_from_env() -> Config {
 
     // TODO fallback into in memory or fail?
     let redis_endpoint = env::var("RURL_REDIS_ENDPOINT").unwrap_or("redis:6379".into());
+    log::info!("redis_endpoint = {}", redis_endpoint);
+    let openrouter_token = env::var("RURL_OPENROUTER_TOKEN").ok();
 
     Config {
         port,
         host,
         redis_endpoint,
+        openrouter_token,
+    }
+}
+
+fn get_link_generator(config: &Config) -> LinkGenerator{
+    match &config.openrouter_token {
+        Some(token) => LinkGenerator::OpenrouterLlama(token.clone()),
+        None => {
+            LinkGenerator::Random
+        }
     }
 }
 
@@ -193,10 +288,11 @@ async fn main() {
 
     let config = config_from_env();
 
-    let storage = Storage::Redis(RedisSingleConnection::new(config.redis_endpoint).await);
+    let link_generator = get_link_generator(&config);
+    let storage = Storage::Redis(RedisSingleConnection::new(config.redis_endpoint.clone()).await);
     let state = Arc::new(AppState {
-        config: config_from_env(),
-        link_generator: LinkGenerator::Random,
+        config: config,
+        link_generator: link_generator,
         storage,
     });
 
@@ -232,6 +328,17 @@ async fn handle_post(
 
             for attempt in 1..=MAX_ATTEMPTS {
                 let short = state.link_generator.generate(&url).await;
+
+                let short = if let Some(s) = short {
+                    s
+                } else {
+                    log::warn!(
+                        "Attempt {}/{} failed to generate short link",
+                        attempt,
+                        MAX_ATTEMPTS
+                    );
+                    continue;
+                };
 
                 if state.storage.store(short.clone(), url.clone()).await {
                     return (
@@ -296,7 +403,12 @@ mod tests {
         let keys = vec!["key1", "key2", "key3"];
         let mut short_links = HashSet::<String>::new();
         for key in keys.iter() {
-            short_links.insert(link_generator.generate(&key).await);
+            short_links.insert(
+                link_generator
+                    .generate(&key)
+                    .await
+                    .expect("Cannot generate key"),
+            );
         }
         assert!(short_links.len() == keys.len());
     }
