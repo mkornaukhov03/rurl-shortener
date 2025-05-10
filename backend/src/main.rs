@@ -51,16 +51,16 @@ impl RedisSingleConnection {
             .await
         {
             Ok(resp) => match resp {
-                redis::Value::Okay => return true,
-                redis::Value::Nil => return false,
+                redis::Value::Okay => true,
+                redis::Value::Nil => false,
                 _ => {
                     log::warn!("Response from redis store is not OK, nor nil");
-                    return false;
+                    false
                 }
             },
             Err(e) => {
                 log::error!("Error to store in redis: {}", e);
-                return false;
+                false
             }
         }
     }
@@ -74,29 +74,23 @@ impl RedisSingleConnection {
             .await
         {
             Ok(resp) => match resp {
-                redis::Value::SimpleString(s) => {
-                    return Some(s);
-                }
-                redis::Value::Nil => {
-                    return None;
-                }
+                redis::Value::SimpleString(s) => Some(s),
+                redis::Value::Nil => None,
                 redis::Value::BulkString(s) => match String::from_utf8(s) {
-                    Ok(s) => {
-                        return Some(s);
-                    }
+                    Ok(s) => Some(s),
                     Err(_) => {
                         log::warn!("Non utf-8 url is stored");
-                        return None;
+                        None
                     }
                 },
                 _ => {
                     log::warn!("Stored value is not string");
-                    return None;
+                    None
                 }
             },
             Err(e) => {
                 log::error!("Error to fetch from redis: {}", e);
-                return None;
+                None
             }
         }
     }
@@ -113,11 +107,11 @@ impl Storage {
         match self {
             Storage::NonPersistent(rw_lock) => {
                 let mut guard = rw_lock.write().await;
-                if guard.contains_key(&short) {
-                    false
-                } else {
-                    guard.insert(short, url);
+                if let std::collections::hash_map::Entry::Vacant(e) = guard.entry(short) {
+                    e.insert(url);
                     true
+                } else {
+                    false
                 }
             }
             Storage::Redis(redis_single_connection) => {
@@ -158,7 +152,8 @@ struct Choice {
 
 #[derive(Debug, Deserialize)]
 struct OpenrouterResponse {
-    id: String,
+    #[serde(rename = "id")]
+    _id: String,
     choices: Vec<Choice>,
 }
 
@@ -175,14 +170,14 @@ impl LinkGenerator {
                          abcdefghijklmnopqrstuvwxyz\
                          0123456789";
                 let mut rng = rand::rng();
-                return Some(
+                Some(
                     (0..8)
                         .map(|_| {
                             let idx = rng.random_range(0..CHARSET.len());
                             CHARSET[idx] as char
                         })
                         .collect(),
-                );
+                )
             }
             LinkGenerator::OpenrouterLlama(token) => {
                 let prompt = format!(
@@ -203,31 +198,29 @@ Example output:
                     }],
                 };
                 let client = reqwest::Client::new();
-                let response;
 
-                match client
+                let response = match client
                     .post("https://openrouter.ai/api/v1/chat/completions")
                     .header(header::AUTHORIZATION, format!("Bearer {}", token))
                     .json(&body)
                     .send()
                     .await
                 {
-                    Ok(resp) => response = resp,
+                    Ok(resp) => resp,
                     Err(e) => {
                         log::error!("Error in openrouter api: {e}");
                         return None;
                     }
-                }
+                };
 
-                let openrouter_resp: OpenrouterResponse;
-
-                match response.json::<OpenrouterResponse>().await {
-                    Ok(r) => openrouter_resp = r,
-                    Err(e) => {
-                        log::error!("Error in demarshalling api: {e}");
-                        return None;
-                    }
-                }
+                let openrouter_resp: OpenrouterResponse =
+                    match response.json::<OpenrouterResponse>().await {
+                        Ok(r) => r,
+                        Err(e) => {
+                            log::error!("Error in demarshalling api: {e}");
+                            return None;
+                        }
+                    };
                 let model_response: ModelResponse =
                     serde_json::from_str(&openrouter_resp.choices[0].message.content).ok()?;
 
@@ -273,12 +266,10 @@ fn config_from_env() -> Config {
     }
 }
 
-fn get_link_generator(config: &Config) -> LinkGenerator{
+fn get_link_generator(config: &Config) -> LinkGenerator {
     match &config.openrouter_token {
         Some(token) => LinkGenerator::OpenrouterLlama(token.clone()),
-        None => {
-            LinkGenerator::Random
-        }
+        None => LinkGenerator::Random,
     }
 }
 
@@ -291,8 +282,8 @@ async fn main() {
     let link_generator = get_link_generator(&config);
     let storage = Storage::Redis(RedisSingleConnection::new(config.redis_endpoint.clone()).await);
     let state = Arc::new(AppState {
-        config: config,
-        link_generator: link_generator,
+        config,
+        link_generator,
         storage,
     });
 
@@ -302,7 +293,7 @@ async fn main() {
         .route("/", post(handle_post))
         .with_state(state.clone());
 
-    let addr = format!("{}:{}", (*state).config.host, state.config.port);
+    let addr = format!("{}:{}", state.config.host, state.config.port);
     let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
     log::info!("Starting to accept clients on {addr}");
     axum::serve(listener, app).await.unwrap();
@@ -371,15 +362,13 @@ async fn handle_post(
 async fn handle_get(State(state): State<Arc<AppState>>, Path(path): Path<String>) -> Response {
     log::info!("GET /{}", path);
     match state.storage.fetch(&path).await {
-        Some(full) => {
-            return (
-                StatusCode::MOVED_PERMANENTLY,
-                [(header::LOCATION, full)],
-                "Moved permanently",
-            )
-                .into_response();
-        }
-        None => return (StatusCode::NOT_FOUND, "Not found").into_response(),
+        Some(full) => (
+            StatusCode::MOVED_PERMANENTLY,
+            [(header::LOCATION, full)],
+            "Moved permanently",
+        )
+            .into_response(),
+        None => (StatusCode::NOT_FOUND, "Not found").into_response(),
     }
 }
 
@@ -400,12 +389,12 @@ mod tests {
     #[tokio::test]
     async fn test_random_link_generator() {
         let link_generator = LinkGenerator::Random;
-        let keys = vec!["key1", "key2", "key3"];
+        let keys = ["key1", "key2", "key3"];
         let mut short_links = HashSet::<String>::new();
         for key in keys.iter() {
             short_links.insert(
                 link_generator
-                    .generate(&key)
+                    .generate(key)
                     .await
                     .expect("Cannot generate key"),
             );
