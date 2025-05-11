@@ -19,6 +19,6 @@ jobs:
     - name: Build
       working-directory: ./backend
       run: cargo build --verbose
-    - name: Run tests
+    - name: Run unit tests
       working-directory: ./backend
       run: cargo test
