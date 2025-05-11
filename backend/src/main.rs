@@ -399,7 +399,6 @@ mod tests {
                     .expect("Cannot generate key"),
             );
         }
-        assert!(short_links.len() != keys.len());
-        // assert!(short_links.len() == keys.len());
+        assert!(short_links.len() == keys.len());
     }
 }
