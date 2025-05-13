@@ -21,7 +21,6 @@ impl Config {
         // TODO maybe better to fallback into in-memory storage?
         let redis_endpoint = env::var("RURL_REDIS_ENDPOINT")
             .expect("Provide redis endpoint via RURL_REDIS_ENDPOINT");
-        log::info!("redis_endpoint = {}", redis_endpoint);
         let openrouter_token = env::var("RURL_OPENROUTER_TOKEN").ok();
 
         Config {

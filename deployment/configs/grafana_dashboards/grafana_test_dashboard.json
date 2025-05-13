@@ -108,13 +108,13 @@
               "uid": "P4169E866C3094E38"
             },
             "editorMode": "code",
-            "expr": "myapp_processed_ops_total{}",
+            "expr": "rate(http_requests_total[1m]) * 60",
             "legendFormat": "__auto",
             "range": true,
             "refId": "A"
           }
         ],
-        "title": "Test metric from victoria(from victoria-test app)",
+        "title": "Requests per minute",
         "type": "timeseries"
       },
       {
@@ -153,12 +153,12 @@
             },
             "direction": "backward",
             "editorMode": "builder",
-            "expr": "{container=\"rurl-alertmanager-1\"} |= ``",
+            "expr": "{container=\"rurl-backend-1\"} |= ``",
             "queryType": "range",
             "refId": "A"
           }
         ],
-        "title": "Alertmanager logs from loki",
+        "title": "Backend logs from loki",
         "type": "logs"
       }
     ],

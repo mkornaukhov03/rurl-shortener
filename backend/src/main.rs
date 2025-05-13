@@ -1,12 +1,14 @@
 mod config;
 mod handlers;
 mod link_generator;
+mod metrics;
 mod storage;
 
 use axum::{
-    Router,
+    Router, middleware,
     routing::{get, post},
 };
+use metrics::MetricsMiddleware;
 use std::sync::Arc;
 
 use config::Config;
@@ -31,7 +33,9 @@ async fn main() {
     let app = Router::new()
         .route("/{*link}", get(handlers::get))
         .route("/status", get(handlers::status))
+        .route("/metrics", get(metrics::metrics_handler))
         .route("/", post(handlers::post))
+        .layer(middleware::from_fn(MetricsMiddleware::record))
         .with_state(state.clone());
 
     let addr = format!("{}:{}", config.host, config.port);
