@@ -5,7 +5,12 @@ mod random;
 
 pub enum LinkGenerator {
     Random,
+
+    #[allow(dead_code)]
     OpenrouterLlama(String),
+
+    // TODO come up with approach to do this case modular
+    OpenrouterLlamaWithFallback(String),
 }
 
 impl LinkGenerator {
@@ -15,11 +20,22 @@ impl LinkGenerator {
             LinkGenerator::OpenrouterLlama(token) => {
                 crate::link_generator::openrouter::generate(full_link, token).await
             }
+            LinkGenerator::OpenrouterLlamaWithFallback(token) => {
+                crate::link_generator::openrouter::generate(full_link, token)
+                    .await
+                    .or_else(|| {
+                        log::warn!(
+                            "Cannot generate unique short link with openrouter for link {}",
+                            full_link
+                        );
+                        Some(crate::link_generator::random::generate())
+                    })
+            }
         }
     }
     pub fn from_config(config: &Config) -> Self {
         match &config.openrouter_token {
-            Some(token) => LinkGenerator::OpenrouterLlama(token.clone()),
+            Some(token) => LinkGenerator::OpenrouterLlamaWithFallback(token.clone()),
             None => LinkGenerator::Random,
         }
     }

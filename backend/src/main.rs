@@ -3,6 +3,7 @@ mod handlers;
 mod link_generator;
 mod metrics;
 mod storage;
+mod validation;
 
 use axum::{
     Router, middleware,

@@ -10,7 +10,7 @@ use axum_macros::debug_handler;
 use maplit::hashmap;
 use reqwest::{StatusCode, header};
 
-use crate::AppState;
+use crate::{AppState, validation};
 
 #[debug_handler]
 pub(crate) async fn status(State(_state): State<Arc<AppState>>) -> StatusCode {
@@ -25,9 +25,15 @@ pub(crate) async fn post(
 ) -> Response {
     log::info!("POST / ({:?})", params);
 
-    // TODO validate uri
     match params.remove("url") {
         Some(url) => {
+            if !validation::is_valid_url(&url) {
+                return (
+                    http::StatusCode::BAD_REQUEST,
+                    "Invalid url",
+                )
+                    .into_response();
+            }
             const MAX_ATTEMPTS: usize = 3;
 
             for attempt in 1..=MAX_ATTEMPTS {
@@ -44,6 +50,15 @@ pub(crate) async fn post(
                     continue;
                 };
 
+                if !validation::is_valid_short_link(&short) {
+                    log::warn!(
+                        "Attempt {}/{} failed (short link is not valid)",
+                        attempt,
+                        MAX_ATTEMPTS
+                    );
+                    continue;
+                }
+
                 if state.storage.store(short.clone(), url.clone()).await {
                     return (
                         http::StatusCode::OK,
@@ -55,7 +70,7 @@ pub(crate) async fn post(
                 }
 
                 log::warn!(
-                    "Attempt {}/{} failed to generate unique short link",
+                    "Attempt {}/{} failed (not a unique short link)",
                     attempt,
                     MAX_ATTEMPTS
                 );
