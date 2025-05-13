@@ -41,13 +41,6 @@ services:
     depends_on:
       - backend
 
-  victoria-test:
-    build:
-      context: ./victoria-test
-      dockerfile: Dockerfile 
-    ports:
-      - 8888:8888
-
   victoriametrics:
     image: victoriametrics/victoria-metrics:v1.116.0
     ports:
