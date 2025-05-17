@@ -5,10 +5,7 @@ mod metrics;
 mod storage;
 mod validation;
 
-use axum::{
-    Router, middleware,
-    routing::{get, post},
-};
+use axum::{middleware, routing::get};
 use metrics::MetricsMiddleware;
 use std::sync::Arc;
 
@@ -31,11 +28,9 @@ async fn main() {
         storage: Storage::from_config(&config).await,
     });
 
-    let app = Router::new()
-        .route("/{*link}", get(handlers::get))
+    let app = handlers::api::v1::router()
         .route("/status", get(handlers::status))
         .route("/metrics", get(metrics::metrics_handler))
-        .route("/", post(handlers::post))
         .layer(middleware::from_fn(MetricsMiddleware::record))
         .with_state(state.clone());
 

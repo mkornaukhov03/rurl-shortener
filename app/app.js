@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             console.log('Server response:', data);
-            const shortenedLink = `${window.appConfig.NGINX_URL}/${data.short}`;
+            const shortenedLink = `${window.appConfig.NGINX_URL}/s/${data.short}`;
             document.getElementById('shortenedLink').textContent = shortenedLink;
         })
         .catch(error => {
