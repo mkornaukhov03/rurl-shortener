@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RURL Shortener - Test Page</title>
+    <style>
+        :root {
+            --primary-color: #4a6bff;
+            --error-color: #ff4757;
+            --success-color: #2ecc71;
+            --secondary-color: #f8f9fa;
+            --text-color: #333;
+            --light-text: #6c757d;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: #f5f7ff;
+            margin: 0;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            padding: 2.5rem;
+            margin-top: 2rem;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            text-align: center;
+            margin-bottom: 2rem;
+            font-weight: 600;
+        }
+
+        h2 {
+            color: var(--primary-color);
+            margin-top: 0;
+            font-weight: 500;
+            border-bottom: 2px solid var(--secondary-color);
+            padding-bottom: 0.5rem;
+        }
+
+        .test-suite {
+            background-color: var(--secondary-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .test-results {
+            margin-top: 1rem;
+        }
+
+        .test-case {
+            padding: 0.8rem;
+            margin-bottom: 0.5rem;
+            border-radius: 6px;
+            background-color: white;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .passed {
+            color: var(--success-color);
+            border-left: 4px solid var(--success-color);
+        }
+
+        .failed {
+            color: var(--error-color);
+            border-left: 4px solid var(--error-color);
+        }
+
+        .test-case::before {
+            margin-right: 0.8rem;
+            font-size: 1.2rem;
+        }
+
+        .passed::before {
+            content: "✓";
+        }
+
+        .failed::before {
+            content: "✗";
+        }
+
+        .stats {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background-color: white;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .success-count {
+            color: var(--success-color);
+        }
+
+        .failure-count {
+            color: var(--error-color);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>RURL Shortener - Test Suite</h1>
+
+        <div class="test-suite">
+            <h2>URL Validation Tests</h2>
+            <div id="url-validation-tests" class="test-results"></div>
+        </div>
+
+        <div class="stats" id="test-stats">
+            Running tests...
+        </div>
+    </div>
+
+    <script type="module">
+        import { validateURL } from '../utils.js';
+
+        class TestSuite {
+            constructor(testResultsId) {
+                this.results = [];
+                this.testResultsElement = document.getElementById(testResultsId);
+                this.statsElement = document.getElementById('test-stats');
+            }
+
+            equal(actual, expected, message) {
+                const result = actual === expected;
+                this.results.push({ result, message });
+                this.displayResult(result, message);
+                this.updateStats();
+                return result;
+            }
+
+            displayResult(result, message) {
+                const div = document.createElement('div');
+                div.classList.add('test-case', result ? 'passed' : 'failed');
+                div.textContent = message;
+                this.testResultsElement.appendChild(div);
+            }
+
+            updateStats() {
+                const passed = this.results.filter(r => r.result).length;
+                const failed = this.results.length - passed;
+                this.statsElement.innerHTML = `
+                    Tests completed: <span class="success-count">${passed} passed</span>, 
+                    <span class="failure-count">${failed} failed</span>, 
+                    ${this.results.length} total
+                `;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const validateURLTests = new TestSuite('url-validation-tests');
+
+            validateURLTests.equal(
+                validateURL('https://yandex.ru/asdf'),
+                true,
+                'Should accept valid HTTPS URLs with paths'
+            );
+
+            validateURLTests.equal(
+                validateURL('https://example.com'),
+                true,
+                'Should accept standard HTTPS URLs'
+            );
+
+            validateURLTests.equal(
+                validateURL('ftp://example.com'),
+                false,
+                'Should reject non-HTTP(S) protocols'
+            );
+
+            validateURLTests.equal(
+                validateURL('http://.ru'),
+                false,
+                'Should reject URLs without domain name'
+            );
+
+            validateURLTests.equal(
+                validateURL('htt://yandex.ru'),
+                false,
+                'Should reject URLs with incorrect protocol (htt://)'
+            );
+        });
+    </script>
+</body>
+
+</html>
