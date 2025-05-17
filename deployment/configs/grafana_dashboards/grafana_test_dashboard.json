@@ -35,6 +35,196 @@
               "axisBorderShow": false,
               "axisCenteredZero": false,
               "axisColorMode": "text",
+              "axisLabel": "Response Time",
+              "axisPlacement": "auto",
+              "drawStyle": "line",
+              "fillOpacity": 0,
+              "gradientMode": "none",
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 2,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "auto",
+              "spanNulls": false,
+              "stacking": {
+                "mode": "none"
+              }
+            },
+            "decimals": 3,
+            "mappings": [],
+            "min": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "red",
+                  "value": 1
+                }
+              ]
+            },
+            "unit": "s"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 0
+        },
+        "id": 4,
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "single",
+            "sort": "ascending"
+          }
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "victoriametrics-metrics-datasource",
+              "uid": "P4169E866C3094E38"
+            },
+            "editorMode": "code",
+            "expr": "histogram_quantile(0.5, rate(http_response_time_ms_bucket{method=\"POST\"}[5m])) / 1000",
+            "legendFormat": "P50",
+            "refId": "C"
+          },
+          {
+            "datasource": {
+              "type": "victoriametrics-metrics-datasource",
+              "uid": "P4169E866C3094E38"
+            },
+            "editorMode": "code",
+            "expr": "histogram_quantile(0.9, rate(http_response_time_ms_bucket{method=\"POST\"}[5m])) / 1000",
+            "legendFormat": "P90",
+            "refId": "D"
+          }
+        ],
+        "title": "Response Time (POST requests)",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "victoriametrics-metrics-datasource",
+          "uid": "P4169E866C3094E38"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "Response Time",
+              "axisPlacement": "auto",
+              "drawStyle": "line",
+              "fillOpacity": 0,
+              "gradientMode": "none",
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 2,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "auto",
+              "spanNulls": false,
+              "stacking": {
+                "mode": "none"
+              }
+            },
+            "decimals": 3,
+            "mappings": [],
+            "min": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "red",
+                  "value": 1
+                }
+              ]
+            },
+            "unit": "s"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 0
+        },
+        "id": 3,
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "single",
+            "sort": "ascending"
+          }
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "victoriametrics-metrics-datasource",
+              "uid": "P4169E866C3094E38"
+            },
+            "editorMode": "code",
+            "expr": "histogram_quantile(0.5, rate(http_response_time_ms_bucket{method=\"GET\"}[5m])) / 1000",
+            "legendFormat": "P50",
+            "refId": "A"
+          },
+          {
+            "datasource": {
+              "type": "victoriametrics-metrics-datasource",
+              "uid": "P4169E866C3094E38"
+            },
+            "editorMode": "code",
+            "expr": "histogram_quantile(0.9, rate(http_response_time_ms_bucket{method=\"GET\"}[5m])) / 1000",
+            "legendFormat": "P90",
+            "refId": "B"
+          }
+        ],
+        "title": "Response Time (GET requests)",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "victoriametrics-metrics-datasource",
+          "uid": "P4169E866C3094E38"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
               "axisLabel": "",
               "axisPlacement": "auto",
               "barAlignment": 0,
@@ -86,7 +276,7 @@
           "x": 0,
           "y": 0
         },
-        "id": 1,
+        "id": 2,
         "options": {
           "legend": {
             "calcs": [],
@@ -132,7 +322,7 @@
           "x": 12,
           "y": 0
         },
-        "id": 2,
+        "id": 1,
         "options": {
           "dedupStrategy": "none",
           "enableInfiniteScrolling": false,
@@ -169,7 +359,7 @@
       "list": []
     },
     "time": {
-      "from": "now-6h",
+      "from": "now-1h",
       "to": "now"
     },
     "timepicker": {},
