@@ -11,13 +11,13 @@ server {
         return 200 "window.appConfig = { NGINX_URL: '$NGINX_URL' };";
     }
 
+    location /tests/ {
+        try_files $uri $uri/ /tests/index.html;
+    }
+
     # Serve static files directly
     location / {
         try_files $uri $uri/ /index.html;
-    }
-
-    location /tests/ {
-        try_files $uri $uri/ /test/index.html;
     }
 
     # Proxy API requests to backend
