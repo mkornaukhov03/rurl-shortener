@@ -1,9 +1,13 @@
 groups:
   - name: UrlShortenerAlerts
+    interval: 30s
     rules:
-      - alert: TestAlert
-        for: 1ms
-        expr: myapp_processed_ops_total{} > 0
+      - alert: High traffic
+        for: 5s
+        expr: rate(http_requests_total[1m]) > 100
         labels:
-          label: testLabel
           host: "{{ $labels.instance }}"
+          severity: "warning"
+        annotations:
+          summary: "Unexpectedly high traffic"
+          description: "RPS is higher than 100, that is unexpected for now"

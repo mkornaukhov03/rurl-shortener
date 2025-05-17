@@ -94,7 +94,7 @@ services:
     image: prom/alertmanager:v0.28.1
     volumes:
       - ./deployment/configs/alertmanager.yaml:/etc/alertmanager/alertmanager.yaml
-      - ./bot_token.env:/etc/telegram_bot_token
+      - ./bot_token.env:/etc/telegram_bot_token.env
     ports:
       - 9093:9093
     command: ["--config.file=/etc/alertmanager/alertmanager.yaml"]
