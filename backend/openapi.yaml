@@ -17,7 +17,7 @@ paths:
       responses:
         '200':
           description: "Server is healthy"
-  /{short}:
+  /api/v1/{short}:
     get:
       summary: Redirect to original link
       operationId: getUrl
@@ -32,6 +32,8 @@ paths:
                 type: string
               example: "https://en.wikipedia.org/wiki/Wikipedia"
               description: "Original full link"
+        '404':
+          description: Not Found
       parameters:
         - name: "short"
           in: path
@@ -40,7 +42,7 @@ paths:
           schema:
             type: string
             format: path
-  /:
+  /api/v1/:
     post:
       summary: Create short link
       requestBody:
@@ -75,9 +77,9 @@ components:
     ShortenResponse:
       type: object
       required:
-      - url
+      - short
       properties:
-        url:
-          description: Link to be shortened
+        short:
+          description: Shortened link
           type: string
-          example: https://en.wikipedia.org/wiki/Wikipedia
+          example: wiki
