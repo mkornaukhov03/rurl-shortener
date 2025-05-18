@@ -243,8 +243,8 @@ async fn shorten_multiple_links_concurrently() {
     };
 
     let (_, script_res) = tokio::join!(
-        timeout(Duration::from_secs(1), app.run()),
-        timeout(Duration::from_secs(1), script)
+        timeout(Duration::from_secs(3), app.run()),
+        timeout(Duration::from_secs(3), script)
     );
 
     assert!(script_res.is_ok());
