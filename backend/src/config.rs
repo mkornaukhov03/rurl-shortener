@@ -5,7 +5,7 @@ pub struct Config {
     pub port: u16,
     pub host: String,
 
-    pub redis_endpoint: String,
+    pub redis_endpoint: Option<String>,
     pub openrouter_token: Option<String>,
 }
 
@@ -18,9 +18,7 @@ impl Config {
 
         let host = env::var("RURL_HOST").expect("Provide host via RURL_HOST");
 
-        // TODO maybe better to fallback into in-memory storage?
-        let redis_endpoint = env::var("RURL_REDIS_ENDPOINT")
-            .expect("Provide redis endpoint via RURL_REDIS_ENDPOINT");
+        let redis_endpoint = env::var("RURL_REDIS_ENDPOINT").ok();
         let openrouter_token = env::var("RURL_OPENROUTER_TOKEN").ok();
 
         Config {

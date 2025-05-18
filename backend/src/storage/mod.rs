@@ -41,12 +41,12 @@ mod internal {
         }
 
         pub async fn from_config(config: &config::Config) -> Self {
-            // For now, it always try to connect to redis.
-            // Maybe better to fallback into in-memory storage?
-            StorageInner::Redis(
-                crate::storage::redis::RedisSingleConnection::new(config.redis_endpoint.clone())
-                    .await,
-            )
+            match &config.redis_endpoint {
+                Some(endpoint) => StorageInner::Redis(
+                    crate::storage::redis::RedisSingleConnection::new(endpoint.to_string()).await,
+                ),
+                None => StorageInner::NonPersistent(RwLock::new(HashMap::default())),
+            }
         }
     }
 }
