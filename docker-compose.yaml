@@ -14,7 +14,7 @@ services:
   backend:
     build:
       context: ./backend
-      dockerfile: Dockerfile.amd64 # Setup Dockerfile.common in case of ARM architecture
+      dockerfile: Dockerfile.common
     ports:
       - "4444:4444"
     environment:
@@ -46,7 +46,7 @@ services:
     ports:
       - 8428:8428
     volumes:
-      - ./deployment/configs/scrape_config.yaml:/etc/scrape_config.yaml
+      - ./telemetry/victoriametrics/scrape_config.yaml:/etc/scrape_config.yaml
     command: ["-promscrape.config=/etc/scrape_config.yaml"]
 
   grafana:
@@ -56,10 +56,10 @@ services:
     ports: 
       - 3000:3000
     volumes:
-      - ./deployment/configs/grafana.ini:/etc/grafana/grafana.ini
-      - ./deployment/configs/datasource.yaml:/etc/grafana/provisioning/datasources/datasource.yaml
-      - ./deployment/configs/grafana_dashboard_provider.yaml:/etc/grafana/provisioning/dashboards/main.yaml
-      - ./deployment/configs/grafana_dashboards/:/var/lib/grafana/dashboards
+      - ./telemetry/grafana/grafana.ini:/etc/grafana/grafana.ini
+      - ./telemetry/grafana/datasource.yaml:/etc/grafana/provisioning/datasources/datasource.yaml
+      - ./telemetry/grafana/dashboard_provider.yaml:/etc/grafana/provisioning/dashboards/main.yaml
+      - ./telemetry/grafana/dashboards/:/var/lib/grafana/dashboards
     depends_on:
       - alloy
       - vmalert
@@ -72,12 +72,12 @@ services:
     ports:
       - 3100:3100
     volumes:
-      - ./deployment/configs/loki.yaml:/etc/loki/config.yaml
+      - ./telemetry/logging/loki.yaml:/etc/loki/config.yaml
 
   alloy:
     image: grafana/alloy:v1.8.2
     volumes:
-      - ./deployment/configs/alloy-local-config.yaml:/etc/alloy/config.alloy
+      - ./telemetry/logging/alloy.yaml:/etc/alloy/config.alloy
       - /var/run/docker.sock:/var/run/docker.sock
     command:  [
       "run",
@@ -93,7 +93,7 @@ services:
   alertmanager:
     image: prom/alertmanager:v0.28.1
     volumes:
-      - ./deployment/configs/alertmanager.yaml:/etc/alertmanager/alertmanager.yaml
+      - ./telemetry/alerting/alertmanager.yaml:/etc/alertmanager/alertmanager.yaml
       - ./bot_token.env:/etc/telegram_bot_token.env
     ports:
       - 9093:9093
@@ -102,7 +102,7 @@ services:
   vmalert:
     image: victoriametrics/vmalert:v1.116.0
     volumes:
-      - ./deployment/configs/vmalert.yaml:/etc/vmalert/vmalert.yaml
+      - ./telemetry/alerting/vmalert.yaml:/etc/vmalert/vmalert.yaml
     command:
       [
         "-rule=/etc/vmalert/vmalert.yaml", 
