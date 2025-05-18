@@ -30,16 +30,18 @@ struct OpenrouterResponse {
     choices: Vec<Choice>,
 }
 
-pub async fn generate(full_link: &str, token: &str) -> Option<String> {
+pub async fn generate(full_link: &str, token: &str, bad_attempts: &[String]) -> Option<String> {
+    let bad_attempts = serde_json::to_string(bad_attempts).unwrap_or("[]".to_string());
     let prompt = format!(
         r#"
 Can you suggest a short path for a URL shortener for this URL: '{}'? 
 Give only one suggestion. It should be one word, possibly with underscores.
 Output have to be in json format, don't write anything except the json.
+The following values are prohibited: {} 
 Example output:
 {}
 "#,
-        full_link, "{\"short_link\": \"url\"}"
+        full_link, bad_attempts, "{\"short_link\": \"url\"}"
     );
     let body = OpenrouterRequestBody {
         model: "meta-llama/llama-4-maverick:free".to_string(),

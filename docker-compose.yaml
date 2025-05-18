@@ -3,8 +3,9 @@ name: rurl
 services:
   redis:
     image: redis:7.2-alpine
-    ports:
-      - "6379:6379"
+    # For debug purposes
+    # ports:
+      # - "6379:6379"
     volumes:
       - redis_data:/data
       - ./redis/redis.conf:/usr/local/etc/redis/redis.conf
@@ -15,8 +16,9 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile.common
-    ports:
-      - "4444:4444"
+    # For debug purposes
+    # ports:
+      # - "4444:4444"
     environment:
       - RUST_LOG=info
       - RURL_PORT=4444
@@ -43,8 +45,9 @@ services:
 
   victoriametrics:
     image: victoriametrics/victoria-metrics:v1.116.0
-    ports:
-      - 8428:8428
+    # For debug purposes
+    # ports:
+      # - 8428:8428
     volumes:
       - ./telemetry/victoriametrics/scrape_config.yaml:/etc/scrape_config.yaml
     command: ["-promscrape.config=/etc/scrape_config.yaml"]
@@ -69,8 +72,9 @@ services:
   
   loki:
     image: grafana/loki:3.4.3
-    ports:
-      - 3100:3100
+    # For debug purposes
+    # ports:
+      # - 3100:3100
     volumes:
       - ./telemetry/logging/loki.yaml:/etc/loki/config.yaml
 
@@ -85,8 +89,9 @@ services:
        "--storage.path=/var/lib/alloy/data",
        "/etc/alloy/config.alloy"
     ]
-    ports:
-      - 12345:12345
+    # For debug purposes
+    # ports:
+      # - 12345:12345
     depends_on:
       - loki
   
@@ -95,8 +100,9 @@ services:
     volumes:
       - ./telemetry/alerting/alertmanager.yaml:/etc/alertmanager/alertmanager.yaml
       - ./bot_token.env:/etc/telegram_bot_token.env
-    ports:
-      - 9093:9093
+    # For debug purposes
+    # ports:
+      # - 9093:9093
     command: ["--config.file=/etc/alertmanager/alertmanager.yaml"]
 
   vmalert:
@@ -109,8 +115,9 @@ services:
         "-datasource.url=http://victoriametrics:8428",
         "-notifier.url=http://alertmanager:9093"
       ]
-    ports:
-      - 8880:8880
+    # For debug purposes
+    # ports:
+      # - 8880:8880
 
 volumes:
   redis_data:

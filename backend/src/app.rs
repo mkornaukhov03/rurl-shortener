@@ -44,6 +44,29 @@ impl App {
     pub async fn run(self) {
         let addr = self.listener.local_addr().expect("Cannot get local addr");
         log::info!("Starting to accept clients on {addr}");
-        axum::serve(self.listener, self.router).await.unwrap();
+        axum::serve(self.listener, self.router)
+            .with_graceful_shutdown(shutdown_signal())
+            .await
+            .unwrap();
+    }
+}
+
+async fn shutdown_signal() {
+    #[cfg(unix)]
+    {
+        use tokio::signal::unix::{SignalKind, signal};
+
+        let _ = signal(SignalKind::terminate())
+            .expect("Failed to install SIGTERM handler")
+            .recv()
+            .await;
+        log::info!("Received termination signal, shutting down gracefully...");
+    }
+    #[cfg(not(unix))]
+    {
+        tokio::signal::ctrl_c()
+            .await
+            .expect("Failed to install CTRL+C handler");
+        log::info!("Received CTRL+C, shutting down gracefully...");
     }
 }

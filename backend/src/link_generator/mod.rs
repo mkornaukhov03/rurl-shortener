@@ -14,14 +14,14 @@ pub enum LinkGenerator {
 }
 
 impl LinkGenerator {
-    pub async fn generate(&self, full_link: &str) -> Option<String> {
+    pub async fn generate(&self, full_link: &str, bad_attempts: &[String]) -> Option<String> {
         match self {
             LinkGenerator::Random => Some(crate::link_generator::random::generate()),
             LinkGenerator::OpenrouterLlama(token) => {
-                crate::link_generator::openrouter::generate(full_link, token).await
+                crate::link_generator::openrouter::generate(full_link, token, bad_attempts).await
             }
             LinkGenerator::OpenrouterLlamaWithFallback(token) => {
-                crate::link_generator::openrouter::generate(full_link, token)
+                crate::link_generator::openrouter::generate(full_link, token, bad_attempts)
                     .await
                     .or_else(|| {
                         log::warn!(
@@ -54,7 +54,7 @@ mod tests {
         for key in keys.iter() {
             short_links.insert(
                 link_generator
-                    .generate(key)
+                    .generate(key, &vec![])
                     .await
                     .expect("Cannot generate key"),
             );

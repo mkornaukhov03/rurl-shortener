@@ -37,6 +37,7 @@ pub mod api {
         ) -> Response {
             log::info!("POST / ({:?})", params);
 
+            let mut bad_attempts: Vec<String> = vec![];
             match params.remove("url") {
                 Some(url) => {
                     if !validation::is_valid_url(&url) {
@@ -45,7 +46,7 @@ pub mod api {
                     const MAX_ATTEMPTS: usize = 3;
 
                     for attempt in 1..=MAX_ATTEMPTS {
-                        let short = state.link_generator.generate(&url).await;
+                        let short = state.link_generator.generate(&url, &bad_attempts).await;
 
                         let short = if let Some(s) = short {
                             s
@@ -64,6 +65,7 @@ pub mod api {
                                 attempt,
                                 MAX_ATTEMPTS
                             );
+                            bad_attempts.push(short);
                             continue;
                         }
 
@@ -82,6 +84,7 @@ pub mod api {
                             attempt,
                             MAX_ATTEMPTS
                         );
+                        bad_attempts.push(short);
                     }
 
                     (
