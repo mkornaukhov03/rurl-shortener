@@ -10,7 +10,7 @@ use axum_macros::debug_handler;
 use maplit::hashmap;
 use reqwest::{StatusCode, header};
 
-use crate::{AppState, validation};
+use crate::{app::AppState, validation};
 
 #[debug_handler]
 pub(crate) async fn status(State(_state): State<Arc<AppState>>) -> StatusCode {

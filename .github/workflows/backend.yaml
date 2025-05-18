@@ -10,7 +10,7 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  test:
+  Check-up:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -23,6 +23,6 @@ jobs:
     - name: Build
       working-directory: ./backend
       run: cargo build --verbose
-    - name: Unit tests
+    - name: Tests
       working-directory: ./backend
       run: cargo test
