@@ -21,6 +21,13 @@ impl LinkGenerator {
                 crate::link_generator::openrouter::generate(full_link, token, bad_attempts).await
             }
             LinkGenerator::OpenrouterLlamaWithFallback(token) => {
+                if bad_attempts.len() == 2 {
+                    log::info!(
+                        "Too many attempts for AI generator for link {}, fallback random",
+                        full_link
+                    );
+                    return Some(crate::link_generator::random::generate());
+                }
                 crate::link_generator::openrouter::generate(full_link, token, bad_attempts)
                     .await
                     .or_else(|| {
