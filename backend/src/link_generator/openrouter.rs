@@ -1,3 +1,4 @@
+use axum::http;
 use reqwest::header;
 use serde::{Deserialize, Serialize};
 
@@ -66,6 +67,10 @@ Example output:
         }
     };
 
+    if response.status() != http::StatusCode::OK {
+        log::error!("Calling AI api is not successful: {response:?}");
+        return None;
+    }
     let openrouter_resp: OpenrouterResponse = match response.json::<OpenrouterResponse>().await {
         Ok(r) => r,
         Err(e) => {
